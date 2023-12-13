@@ -12,26 +12,8 @@ import (
 
 func main() {
 	part1()
-	//part2()
+	part2()
 }
-
-/*
-467..114..
-...*......
-..35..633.
-......#...
-
-
-per part:
-
-r-1 = regel erboven
-r=0 = huidige regel part
-r1 = regel eronder
-
-r-1: substr: part start -1 tot part end + 1.. zit daar een symbol in? --> include
-r-0: is char oo start -1 of end + 1 een symbol? --? include
-r-1: substr: part start -1 tot part end + 1.. zit daar een symbol in? --> include
-*/
 
 type line struct {
 	row     int
@@ -49,12 +31,13 @@ type part struct {
 var lines []line
 var parts []part
 var sumOfAllPartNumbers int64 = 0
+var sumOfAllGearRatios int64 = 0
 
 func part1() {
 	fmt.Println("Analyzing schematic...")
 
 	file, err := os.Open("../../inputs/day03/input.txt")
-	//file, err := os.Open("../../inputs/day03/example-1.txt")
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,6 +53,7 @@ func part1() {
 		split := strings.Split(re.ReplaceAllString(content, " "), " ")
 		parsedContent := content
 
+		// This is for part 1
 		for _, partNumber := range split {
 			if partNumber == "" {
 				continue
@@ -118,6 +102,7 @@ func part1() {
 		}
 	}
 
+	fmt.Println("Sum of all engine parts:")
 	fmt.Println(sumOfAllPartNumbers)
 
 	if err := scanner.Err(); err != nil {
@@ -126,9 +111,26 @@ func part1() {
 
 }
 
+func part2() {
+	for index, line := range lines {
+		if index == 0 || index == len(lines)-1 {
+			continue
+		}
+
+		//fmt.Println(line.content)
+		gearIndexes := findAllIndexes(line.content, "*")
+
+		for _, gearIndex := range gearIndexes {
+			getGearParts(index, gearIndex)
+		}
+	}
+
+	fmt.Println("Sum of all gear ratios:")
+	fmt.Println(sumOfAllGearRatios)
+}
+
 func analyzeRow(rowNr int, part part) bool {
 	content := lines[rowNr].content
-	fmt.Println(part)
 
 	start := part.start - 1
 	if start < 0 {
@@ -147,6 +149,42 @@ func analyzeRow(rowNr int, part part) bool {
 	return re.MatchString(substring)
 }
 
-func part2() {
+func findAllIndexes(s, substr string) []int {
+	indexes := make([]int, 0)
 
+	// Start searching for the substring from the beginning of the string
+	index := -1
+	for {
+		index = strings.Index(s, substr)
+
+		// If the substring is not found, break the loop
+		if index == -1 {
+			break
+		}
+
+		// Append the index to the slice
+		indexes = append(indexes, index)
+
+		// Move the starting point for the next search after the found substring
+		s = strings.Replace(s, "*", ".", 1)
+	}
+
+	return indexes
+}
+
+func getGearParts(rowNr int, checkIndex int) {
+	// We only need to check parts in rowNr -1, rowNr and rowNr + 1
+	var gearParts []int64
+
+	for _, part := range parts {
+		if (part.row == rowNr-1) || (part.row == rowNr) || (part.row == rowNr+1) {
+			if (part.start <= checkIndex+1) && ((part.end - 1) >= checkIndex-1) {
+				gearParts = append(gearParts, part.partNumber)
+			}
+		}
+	}
+
+	if len(gearParts) == 2 {
+		sumOfAllGearRatios += gearParts[0] * gearParts[1]
+	}
 }
